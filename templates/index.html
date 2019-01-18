@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Document</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='CSS/master.css') }}" >
+    </head>
+    <head>
+        <div class="container">  
+            <form id="contact" action="" method="post">
+                <h3>Pollution Stats Poland - Plotting Machine</h3>
+                <h4>Choose the city, maesuring station's street, pollutant, date, type of data and PLOT IT ALL!</h4>
+                <fieldset>
+                        {{ form.city(class = "fields")}}
+                </fieldset>
+                <fieldset>
+                        {{ form.street(class = "fields") }}
+                </fieldset>
+                <fieldset>
+                        {{ form.pollutant(class = "fields") }}
+                </fieldset>
+                <fieldset>
+                        {{ form.date(class = "fields") }}
+                </fieldset>
+                <fieldset>
+                        {{ form.type(class = "fields") }}
+                </fieldset>
+                <fieldset>
+                <button name="submit" type="submit" id="contact-submit" data-submit="...Sending">Plot</button>
+                </fieldset>
+            </form>
+        </div> 
+        <script>
+            var city_select = document.getElementById("city");
+            var street_select = document.getElementById("street");
+            var pollutant_select = document.getElementById("pollutant");
+
+            city_select.onchange = function()  {
+
+                city = city_select.value;
+
+                fetch('/street/' + city).then(function(response) {
+                    response.json().then(function(data) {
+                    let optionHTML = "";
+
+                    for (let street of data.streets) {
+                        optionHTML += '<option value="' + street["id"] + '">' + street["name"] + '</option>';
+                        }
+                        street_select.innerHTML = optionHTML;
+                    });
+                });
+            };
+            street_select.onchange = function()  {
+                street = street_select.value;
+
+                fetch('/pollutant/' + street).then(function(response) {
+                    response.json().then(function(data) {
+                    let optionHTML = "";
+
+                    for (let pollutant of data.pollutants) {
+                        optionHTML += '<option value="' + pollutant["id"] + '">' + pollutant["name"] + '</option>';
+                        }
+                        pollutant_select.innerHTML = optionHTML;
+                    });
+                });
+            }
+            var date_select = document.getElementById("date");
+            var type_select = document.getElementById("type");
+
+            date_select.onchange = function()  {
+
+                date = date_select.value;
+
+                fetch('/type/' + date).then(function(response) {
+                    response.json().then(function(data) {
+                    let optionHTML = "";
+
+                    for (let type of data.types) {
+                        optionHTML += '<option value="' + type["id"] + '">' + type["name"] + '</option>';
+                        }
+                        type_select.innerHTML = optionHTML;
+                    });
+                });
+            };
+        </script>
+    </head>
+</html>

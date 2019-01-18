@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Document</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='CSS/plot.css') }}" >
+    </head>
+  <body>
+      <table id="wrapper">
+          <tr>
+             <td>
+              <br><br><br><br><br><br>
+              <img src= {{ url }} alt="">
+
+              <br>
+              <a href="{{ url_for('index') }}"><button class = "button">Change selection</button></a>
+            </td>
+          </tr>
+       </table>  
+  </body>
+</html>
