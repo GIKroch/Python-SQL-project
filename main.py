@@ -89,9 +89,9 @@ def type(date):
         typeList.append(typeObj)
 
     return jsonify({"types": typeList})
-##NEW
+###dodałem error w nawiasie 20.01.19
 @app.errorhandler(500)
-def error_handler():
+def error_handler(error):
     return redirect(url_for("/"))
 
 @app.after_request
@@ -108,5 +108,5 @@ def add_header(r):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug = True)
     
