@@ -1,6 +1,6 @@
 def GetCities():
     import sqlite3
-    conn = sqlite3.connect('FinalDB.db')
+    conn = sqlite3.connect('DB.db')
     c = conn.cursor()
     c.execute("SELECT city FROM measuring_station")
     cit = c.fetchall()
@@ -20,7 +20,7 @@ def GetCities():
 
 def GetStreets(x):
     import sqlite3
-    conn = sqlite3.connect('FinalDB.db')
+    conn = sqlite3.connect('DB.db')
     c = conn.cursor()
     c.execute("SELECT DISTINCT street FROM final WHERE city = ?;", tuple([x]))
     stree = c.fetchall()
@@ -34,7 +34,7 @@ def GetStreets(x):
 
 def GetPollutant1(x):
     import sqlite3
-    conn = sqlite3.connect('FinalDB.db')
+    conn = sqlite3.connect('DB.db')
     c = conn.cursor()
     c.execute("SELECT paramName, paramCode FROM final WHERE street = ?;", tuple([x]))
     poll = c.fetchall()
@@ -51,7 +51,7 @@ def GetPollutant1(x):
 
 def GetDate():
     import sqlite3
-    conn = sqlite3.connect('FinalDB.db')
+    conn = sqlite3.connect('DB.db')
     c = conn.cursor()
     c.execute("SELECT date FROM final;")
     date = c.fetchall()
@@ -67,7 +67,7 @@ def GetDate():
 
 def GetTime():
     import sqlite3
-    conn = sqlite3.connect('FinalDB.db')
+    conn = sqlite3.connect('DB.db')
     c = conn.cursor()
     c.execute("SELECT time FROM final;")
     time = c.fetchall()

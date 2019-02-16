@@ -1,64 +1,24 @@
-def MeasuringStation():
+def connect_jason(url):
     import json
     import requests
-    url = 'http://api.gios.gov.pl/pjp-api/rest/station/findAll'
     r = requests.get(url)
     jason = json.loads(r.text)
+    return jason
 
-    #### simplifying jason, putting it into a list
-    z = []
-    measure = []
-    i = 0
-    while i < len(jason):
-        z.clear()
-        for k, v in jason[i].items():
-            z.append(v)
-        measure.append(z.copy())
-        i += 1
-    #### measure list has a dictionary inside, so [i][4][name]
-    #### unpacks this dictionary
-    #### two other elements just get what is important for db
-    stations = []
-    for i in range(0, len(measure)):
-        station = [measure[i][0], measure[i][4]["name"], measure[i][5]]
-        stations.append(station)
-    #### there are some stations with no street's name
-    #### instead, here I assign the name of the city
-    for i in range (0, len(stations)):
-        if stations[i][2] == None:
-            stations[i][2] = stations[i][1]
-
+def API_multiplication(sql_command, part_url):
     import sqlite3
-    conn = sqlite3.connect('FinalDB.db')
-    c = conn.cursor()
-    c.execute("""CREATE TABLE measuring_station (stationID INTEGER PRIMARY KEY,
-              City VARCHAR (32), Street VARCHAR (50))""")
-    c.executemany("INSERT INTO measuring_station VALUES (?, ?, ?);", stations)
-    conn.commit()
-    conn.close()
-
-
-def SensorsID():
-
-    import sqlite3
-    conn = sqlite3.connect('FinalDB.db')
+    conn = sqlite3.connect('DB.db')
     c = conn.cursor()
     idd = []
-    for row in c.execute("SELECT stationID FROM measuring_station"):
+    for row in c.execute(sql_command):
         idd.append(row)
     idd = [i[0] for i in idd]
 
-    #### turning the string into the list to be able to add to the end of
-    #### the string stations' ids. The whole api is
-    #### http://api.gios.gov.pl/pjp-api/rest/station/sensors/station_ID
-    #### every url is placed in separated list
-    #### every letter of the url becomes this list element.
-    url = "http://api.gios.gov.pl/pjp-api/rest/station/sensors/"
+    url = part_url
     url_list = []
     for i in url:
         url_list.append(i)
 
-    #### assigning ids to the lists of urls
     url_all = []
     i = 0
     while i < len(idd):
@@ -66,43 +26,77 @@ def SensorsID():
         url_all.append(g)
         i += 1
 
-    #### joining strings to get final urls
+    for i in range(0, len(url_all)):
+        url_all[i] = ''.join(map(str, url_all[i]))
+        
+    return url_all
+
+def MeasuringStation():
+    url = 'http://api.gios.gov.pl/pjp-api/rest/station/findAll'
+    jason = connect_jason(url)
+    
+    stations = []
+    for i in jason:
+        stations.append((i["id"],i["city"]["name"],i["addressStreet"]))
+    
+    stations_final = []
+    for i in stations:
+        if i[1] in ["Wrocław", "Kraków", "Warszawa", 
+                     "Poznań", "Łódź", "Gdańsk"]:
+            stations_final.append(i)
+    
+    import sqlite3
+    conn = sqlite3.connect('DB.db')
+    c = conn.cursor()
+    c.execute("""CREATE TABLE measuring_station (stationID INTEGER PRIMARY KEY,
+              City VARCHAR (32), Street VARCHAR (50))""")
+    c.executemany("INSERT INTO measuring_station VALUES (?, ?, ?);", stations_final)
+    conn.commit()
+    conn.close()
+
+def SensorsID():
+    import sqlite3
+    conn = sqlite3.connect('DB.db')
+    c = conn.cursor()
+    
+    idd = []
+    for row in c.execute("SELECT stationID FROM measuring_station"):
+        idd.append(row)
+    idd = [i[0] for i in idd]
+
+    url = "http://api.gios.gov.pl/pjp-api/rest/station/sensors/"
+    url_list = []
+    for i in url:
+        url_list.append(i)
+
+    url_all = []
+    i = 0
+    while i < len(idd):
+        g = url_list + [idd[i]]
+        url_all.append(g)
+        i += 1
+
     for i in range(0, len(url_all)):
         url_all[i] = ''.join(map(str, url_all[i]))
 
-    #### saving json to a list
-    import json
-    import requests
     sensors = []
     for i in range(0, len(url_all)):
-        urll = url_all[i]
-        r = requests.get(urll)
-        jason = json.loads(r.text)
+        jason = connect_jason(url_all[i])
         sensors.append(jason)
-
-    #### Getting rid of nested list so to have list of dictionaries, not
-    #### list of lists of dictionaries
-    new_sensors = []
-    for i in range(0, len(sensors)):
-        for x in sensors[i]:
-            new_sensors.append(x)
-
-    #### unpacking list of dictionaries into a list
-    #### which can be passed into the database
-    final_sensors = []
-    for i in range(0, len(sensors)):
-        for z in range(0, len(sensors[i])):
-            sensor = [sensors[i][z]["id"], sensors[i][z]["stationId"],
-                      sensors[i][z]["param"]["paramName"],
-                      sensors[i][z]["param"]["paramCode"]]
-            final_sensors.append(sensor)
+    
+    sensors = [subitem for item in sensors for subitem in item]
+    
+    sensors_id = []
+    for i in sensors:
+        sensors_id.append((i["id"], i["stationId"], i["param"]["paramName"], i["param"]["paramCode"]))
 
     c.execute("""CREATE TABLE sensors_data (sensorID INT PRIMARY KEY,
               stationID INT, paramName VARCHAR(30), paramCode VARCHAR(8), 
               FOREIGN KEY(stationID) REFERENCES measuring_station(stationID));""")
-    c.executemany("INSERT INTO sensors_data VALUES (?, ?, ?, ?)", final_sensors)
+    c.executemany("INSERT INTO sensors_data VALUES (?, ?, ?, ?)", sensors_id)
     conn.commit()
     conn.close()
+
 
 
 def FinalStats():
@@ -110,7 +104,7 @@ def FinalStats():
     import update_new
     
     update_new.UpdateDB()
-    conn = sqlite3.connect("FinalDB.db")
+    conn = sqlite3.connect("DB.db")
     c = conn.cursor()
     c.execute("SELECT * FROM pollution_stats")
     poll = c.fetchall()

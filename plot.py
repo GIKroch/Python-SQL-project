@@ -1,7 +1,7 @@
 def GetFinalData(city, street, paramCode, date, type):
     import matplotlib.pyplot as plt
     import sqlite3
-    conn = sqlite3.connect('FinalDB.db')
+    conn = sqlite3.connect('DB.db')
     c = conn.cursor()
     city = [city]
     paramCode = [paramCode]

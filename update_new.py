@@ -3,7 +3,9 @@ def UpdateDB():
     import datetime
     import json
     import requests
-    conn = sqlite3.connect("FinalDB.db")
+    import rewriting
+
+    conn = sqlite3.connect("DB.db")
     c = conn.cursor()
     c.execute("SELECT DISTINCT date FROM final")
     dates = c.fetchall()
@@ -18,71 +20,45 @@ def UpdateDB():
     conn.commit()
 
     if yesterday not in dates:
-        #### x is a string choosing proper column from SQL DB.
-        #### The column contains IDs,
-        #### which we can add to URL to get data for specified ID
-        idd = []
-        for row in c.execute("SELECT sensorID FROM sensors_data"):
-            idd.append(row)
-        idd = [i[0] for i in idd]
-
-        #### url is a string representing url adrress which will
-        #### be modified in every iterration
         url = 'http://api.gios.gov.pl/pjp-api/rest/data/getData/'
-        url_list = []
-        for i in url:
-            url_list.append(i)
-
-        url_all = []
-        i = 0
-        while i < len(idd):
-            g = url_list + [idd[i]]
-            url_all.append(g)
-            i += 1
-
-        for i in range(0, len(url_all)):
-            url_all[i] = ''.join(map(str, url_all[i]))
-
-        final_stats = []
+        url_all = rewriting.API_multiplication("SELECT sensorID FROM sensors_data", url)
         list_1 = []
         for u in range(0, len(url_all)):
             try:
                 r = requests.get(url_all[u])
                 jason = json.loads(r.text)
-                jason["url"] = url_all[u]
+                jason["url"] = url_all[u] 
                 list_1.append(jason)
             except:
                 continue
 
+        final_stats = []
         for i in range(0,len(list_1)):
             for z in range(0, len(list_1[i]["values"])):
                 stat = [list_1[i]["url"][len(url):len(list_1[i]["url"])],
-                        list_1[i]["key"], list_1[i]["values"][z]["date"],
+                        list_1[i]["key"], 
                         str.split(list_1[i]["values"][z]["date"])[0],
                         str.split(list_1[i]["values"][z]["date"])[1],
                         list_1[i]["values"][z]["value"]]
-                if stat[5] != None:
+                if stat[4] != None:
                     final_stats.append(stat)
-        final_list = []
 
-        for i in range(0, len(final_stats)):
-            final_stats[i][0] = int(final_stats[i][0])
 
-        for i in range(0, len(final_stats)):
-            if final_stats[i][3] == yesterday:
-                final_list.append(final_stats[i])
-
+        conn = sqlite3.connect("DB.db")
+        c = conn.cursor()
         c.execute("""CREATE TABLE pollution_stats (sensorID INTEGER,
-                  paramCode VARCHAR (8), datetime DATETIME,
-                  date DATE, time TIME, value INTEGER, FOREIGN KEY(sensorID) REFERENCES sensors_data(sensorID))""")
-        conn.commit()
+                        paramCode VARCHAR (8),
+                        date DATE, time TIME, 
+                        value INTEGER, 
+                        FOREIGN KEY(sensorID) REFERENCES sensors_data(sensorID))""")
 
-        c.executemany("INSERT INTO pollution_stats VALUES (?, ?, ?, ?, ?, ?);",
-                      final_list)
+
+        c.executemany("INSERT INTO pollution_stats VALUES (?, ?, ?, ?, ?);",
+                    final_stats)
         conn.commit()
     else:
         c.execute("""CREATE TABLE pollution_stats (sensorID INTEGER,
-                  paramCode VARCHAR (8), datetime DATETIME,
+                  paramCode VARCHAR (8),
                   date DATE, time TIME, value INTEGER, FOREIGN KEY(sensorID) REFERENCES sensors_data(sensorID))""")
         conn.commit()
 
